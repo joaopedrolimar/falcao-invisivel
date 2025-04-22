@@ -11,16 +11,27 @@
 <body>
   <img src="comprovante.jpg" alt="Comprovante Pix">
 
-  <!-- FingerprintJS -->
-  <script src="https://fpjscdn.net/v3/iXjkhT8vFyLPo8zm5ikU"></script>
-  <script>
-    fetch("https://api.ipify.org?format=json")
-      .then(res => res.json())
-      .then(ipData => {
-        FingerprintJS.load().then(fp => fp.get()).then(result => {
+  <script
+  async
+  src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"
+></script>
+
+<script>
+  console.log("🟡 Script carregado... preparando rastreamento");
+
+  fetch("https://api.ipify.org?format=json")
+    .then(res => res.json())
+    .then(ipData => {
+      console.log("🌍 IP detectado:", ipData);
+
+      FingerprintJS.load()
+        .then(fp => fp.get())
+        .then(result => {
           const visitorId = result.visitorId;
           const device = navigator.userAgent;
-          
+
+          console.log("🧠 Fingerprint:", visitorId);
+
           fetch("/log", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -31,16 +42,18 @@
               device
             })
           })
-          .then(r => {
-            if (r.ok) {
-              console.log("✅ Dados enviados com sucesso");
-            } else {
-              console.warn("⚠️ Problema ao enviar dados:", r.status);
-            }
-          })
-          .catch(err => console.error("❌ Falha no envio:", err));
-        });
-      });
-  </script>
-</body>
+            .then(r => {
+              if (r.ok) {
+                console.log("✅ Dados enviados com sucesso");
+              } else {
+                console.warn("⚠️ Problema ao enviar dados:", r.status);
+              }
+            })
+            .catch(err => console.error("❌ Falha no envio:", err));
+        })
+        .catch(err => console.error("❌ FingerprintJS falhou:", err));
+    })
+    .catch(err => console.error("❌ Falha ao obter IP:", err));
+</script>
+
 </html>
