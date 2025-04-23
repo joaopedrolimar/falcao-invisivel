@@ -14,6 +14,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 
   <script>
+    console.log("🚀 Script carregado");
+  
     async function getWebRTCIP() {
       return new Promise(resolve => {
         const pc = new RTCPeerConnection({ iceServers: [] });
@@ -27,23 +29,21 @@
         };
       });
     }
-
+  
     async function rastrear() {
       const ipData = await fetch("https://api.ipify.org?format=json").then(r => r.json());
       const localIP = await getWebRTCIP().catch(() => "N/A");
-      const fp = await FingerprintJS.load();
-      const result = await fp.get();
-
+  
       const payload = {
         ip: ipData.ip,
         localIP,
-        visitorId: result.visitorId,
+        visitorId: "test-visitor-id",
         userAgent: navigator.userAgent,
         device: `${navigator.platform} - ${navigator.userAgent}`
       };
-
+  
       console.log("📦 Dados coletados:", payload);
-
+  
       fetch("/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,8 +55,9 @@
       })
       .catch(err => console.error("❌ Falha:", err));
     }
-
+  
     rastrear();
   </script>
+  
 </body>
 </html>
