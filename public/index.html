@@ -13,64 +13,51 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 
-<script>
-  console.log("🚀 Script carregado");
-
-  async function getWebRTCIP() {
-    return new Promise(resolve => {
-      const pc = new RTCPeerConnection({ iceServers: [] });
-      pc.createDataChannel("");
-      pc.createOffer().then(offer => pc.setLocalDescription(offer));
-      pc.onicecandidate = event => {
-        if (event && event.candidate) {
-          const ipMatch = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(event.candidate.candidate);
-          if (ipMatch) resolve(ipMatch[1]);
-        }
-      };
-    });
-  }
-
-  async function rastrear() {
-  console.log("🕵️ Iniciando rastreio...");
-
-  const ipData = await fetch("https://api.ipify.org?format=json").then(r => r.json());
-  const localIP = await getWebRTCIP().catch(() => "N/A");
-
-  let visitorId = "N/A";
-  try {
-    const fp = await FingerprintJS.load();
-    const result = await fp.get();
-    visitorId = result.visitorId;
-  } catch (err) {
-    console.warn("⚠️ FingerprintJS falhou:", err);
-  }
-
-  const payload = {
-    ip: ipData.ip,
-    localIP,
-    visitorId,
-    userAgent: navigator.userAgent,
-    device: `${navigator.platform} - ${navigator.userAgent}`
-  };
-
-  console.log("📦 Dados coletados:", payload);
-
-  fetch("/log", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(r => {
-    if (r.ok) console.log("✅ Dados enviados com sucesso");
-    else console.warn("⚠️ Erro ao enviar:", r.status);
-  })
-  .catch(err => console.error("❌ Falha:", err));
-}
-
-
-  rastrear(); // ⚡ Isso chama a função quando a página carrega
-</script>
-
+  <script>
+    window.onload = async function rastrear() {
+      console.log("🟡 Script carregado... iniciando rastreamento");
+  
+      try {
+        const ipData = await fetch("https://api.ipify.org?format=json").then(r => r.json());
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel("");
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+  
+        let localIP = "N/A";
+        pc.onicecandidate = event => {
+          if (event && event.candidate) {
+            const match = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(event.candidate.candidate);
+            if (match) localIP = match[1];
+          }
+        };
+  
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+  
+        const data = {
+          ip: ipData.ip,
+          localIP,
+          visitorId: result.visitorId,
+          userAgent: navigator.userAgent,
+          device: `${navigator.platform} - ${navigator.userAgent}`
+        };
+  
+        console.log("📦 Payload:", data);
+  
+        await fetch("/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+  
+        console.log("✅ Enviado");
+      } catch (err) {
+        console.error("❌ Erro no rastreamento", err);
+      }
+    };
+  </script>
+  
   
 </body>
 </html>
