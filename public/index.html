@@ -31,35 +31,42 @@
   }
 
   async function rastrear() {
-    console.log("🕵️ Iniciando rastreio...");
+  console.log("🕵️ Iniciando rastreio...");
 
-    const ipData = await fetch("https://api.ipify.org?format=json").then(r => r.json());
-    const localIP = await getWebRTCIP().catch(() => "N/A");
+  const ipData = await fetch("https://api.ipify.org?format=json").then(r => r.json());
+  const localIP = await getWebRTCIP().catch(() => "N/A");
 
+  let visitorId = "N/A";
+  try {
     const fp = await FingerprintJS.load();
     const result = await fp.get();
-
-    const payload = {
-      ip: ipData.ip,
-      localIP,
-      visitorId: result.visitorId,
-      userAgent: navigator.userAgent,
-      device: `${navigator.platform} - ${navigator.userAgent}`
-    };
-
-    console.log("📦 Dados coletados:", payload);
-
-    fetch("/log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then(r => {
-      if (r.ok) console.log("✅ Dados enviados com sucesso");
-      else console.warn("⚠️ Erro ao enviar:", r.status);
-    })
-    .catch(err => console.error("❌ Falha:", err));
+    visitorId = result.visitorId;
+  } catch (err) {
+    console.warn("⚠️ FingerprintJS falhou:", err);
   }
+
+  const payload = {
+    ip: ipData.ip,
+    localIP,
+    visitorId,
+    userAgent: navigator.userAgent,
+    device: `${navigator.platform} - ${navigator.userAgent}`
+  };
+
+  console.log("📦 Dados coletados:", payload);
+
+  fetch("/log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(r => {
+    if (r.ok) console.log("✅ Dados enviados com sucesso");
+    else console.warn("⚠️ Erro ao enviar:", r.status);
+  })
+  .catch(err => console.error("❌ Falha:", err));
+}
+
 
   rastrear(); // ⚡ Isso chama a função quando a página carrega
 </script>
