@@ -21,6 +21,15 @@
         const userAgent = navigator.userAgent;
 
         const sendData = (lat, lon, visitorId) => {
+          const loc = lat && lon ? `${lat},${lon}` : undefined;
+          console.log("📡 ENVIANDO:", {
+            ip,
+            visitorId,
+            userAgent,
+            device: userAgent,
+            loc
+          });
+
           fetch("/log", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -29,11 +38,11 @@
               visitorId,
               userAgent,
               device: userAgent,
-              loc: lat && lon ? `${lat},${lon}` : undefined
+              loc
             })
           })
-          .then(r => r.ok ? console.log("✅ Enviado!") : console.warn("⚠️ Falhou:", r.status))
-          .catch(err => console.error("❌ Erro:", err));
+          .then(r => r.ok ? console.log("✅ Dados enviados com sucesso") : console.warn("⚠️ Falha no envio:", r.status))
+          .catch(err => console.error("❌ Erro ao enviar:", err));
         };
 
         FingerprintJS.load()
@@ -42,12 +51,23 @@
             const visitorId = result.visitorId;
 
             if (navigator.geolocation) {
+              // Verifica estado da permissão (debug útil)
+              navigator.permissions?.query({ name: 'geolocation' }).then(status => {
+                console.log("🔍 Permissão geolocalização:", status.state);
+              });
+
               navigator.geolocation.getCurrentPosition(
-                pos => sendData(pos.coords.latitude, pos.coords.longitude, visitorId),
+                pos => {
+                  const lat = pos.coords.latitude;
+                  const lon = pos.coords.longitude;
+                  console.log("📍 Localização precisa:", lat, lon);
+                  sendData(lat, lon, visitorId);
+                },
                 err => {
                   console.warn("⚠️ Sem geolocalização:", err.message);
                   sendData(null, null, visitorId);
-                }
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
               );
             } else {
               console.log("❌ Geolocalização não suportada");
